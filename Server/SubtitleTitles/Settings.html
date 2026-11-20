@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html>
+<head><title>mReel Media Inspector</title></head>
+<body>
+<div data-role="page" class="page type-interior pluginConfigurationPage maftySubtitleTitlesPage" data-require="emby-button,emby-checkbox,emby-input,emby-select">
+  <div data-role="content"><div class="content-primary">
+    <h2 class="sectionTitle" data-copy="name">mReel Media Inspector</h2>
+    <p class="fieldDescription" data-copy="intro">Browse subtitle and Blu-ray ISO results by poster. Scanning never changes media files.</p>
+    <details class="maftySettings">
+      <summary data-copy="settings">Scan settings</summary>
+    <form>
+      <div class="selectContainer">
+        <label class="selectLabel" for="maftyLocale">Language / 语言</label>
+        <select id="maftyLocale" class="emby-select emby-select-withcolor maftyLocale" is="emby-select"><option value="auto">Auto / 自动</option><option value="en">English</option><option value="zh">中文</option></select>
+        <div class="selectArrowContainer"><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+      </div>
+      <div class="checkboxListContainer">
+        <h3 id="maftyLibraryHeading" class="checkboxListLabel" data-copy="libraries">Media libraries</h3>
+        <div class="maftyLibraries checkboxList paperList checkboxList-paperList" role="group" aria-labelledby="maftyLibraryHeading"></div>
+        <template class="maftyLibraryChoice"><label><input type="checkbox" is="emby-checkbox"><span></span></label></template>
+      </div>
+      <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" class="maftyBitmap"><span data-copy="bitmap">Sample bitmap subtitles (PGS, VobSub, DVB, XSUB)</span></label>
+      <p class="fieldDescription" data-copy="bitmapHelp"></p>
+      <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" class="maftyReuse"><span data-copy="reuse">Reuse matching subtitle tracks within a season</span></label>
+      <p class="fieldDescription" data-copy="reuseHelp"></p>
+      <div class="selectContainer">
+        <label class="selectLabel" for="maftyMode" data-copy="mode">What the task should do</label>
+        <select id="maftyMode" class="emby-select emby-select-withcolor maftyMode" is="emby-select">
+          <option value="preview" data-copy="preview">Preview only (no title changes)</option>
+          <option value="apply" data-copy="apply">Apply suggested titles</option>
+          <option value="restore" data-copy="restore">Restore original titles</option>
+        </select>
+        <div class="selectArrowContainer"><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+      </div>
+      <button is="emby-button" type="submit" class="emby-button raised button-submit block maftySave"><span data-copy="save">Save</span></button>
+      <button is="emby-button" type="button" class="emby-button raised block maftyRun"><span data-copy="run">Run subtitle task</span></button>
+      <button is="emby-button" type="button" class="emby-button raised block maftyDiscRun"><span data-copy="discRun">Inspect disc formats</span></button>
+      <p class="fieldDescription" data-copy="discHelp">After the disc task finishes, refresh results and select a Blu-ray ISO title below.</p>
+      <p class="maftyStatus" role="status"></p>
+    </form>
+    </details>
+    <section aria-labelledby="maftyResultsTitle" class="maftyResults">
+      <div class="maftyResultsHeader">
+        <h3 class="sectionTitle" id="maftyResultsTitle" data-copy="results">Media inspection results</h3>
+        <button is="emby-button" type="button" class="emby-button raised maftyRefresh"><span class="material-icons refresh" aria-hidden="true"></span><span data-copy="refresh">Refresh results</span></button>
+      </div>
+      <p class="maftyTaskStatus" role="status"></p>
+      <p class="maftyResultsStatus" role="status"></p>
+      <div class="maftyBrowser">
+        <div class="maftyGallery">
+          <div class="inputContainer">
+            <label class="inputLabel" for="maftySearch" data-copy="search">Find a movie or series</label>
+            <input id="maftySearch" class="emby-input maftySearch" is="emby-input" type="search" autocomplete="off">
+          </div>
+          <p class="maftyGalleryStatus" role="status"></p>
+          <div class="maftyPosters"></div>
+          <div class="maftyPagination" hidden>
+            <button is="emby-button" type="button" class="emby-button raised maftyBack"><span data-copy="back">Previous</span></button>
+            <span class="maftyPageNumber" role="status"></span>
+            <button is="emby-button" type="button" class="emby-button raised maftyNext"><span data-copy="next">Next</span></button>
+          </div>
+        </div>
+        <section class="paperList maftyDetail" id="maftyDetails" aria-labelledby="maftyDetailTitle">
+          <button is="emby-button" type="button" class="emby-button raised maftyReturn" hidden><span data-copy="returnGallery">Back to posters</span></button>
+          <h4 id="maftyDetailTitle" class="maftyDetailTitle" tabindex="-1" data-copy="results">Media inspection results</h4>
+          <div class="selectContainer maftySourceChoice" hidden>
+            <label class="selectLabel maftySourceLabel" for="maftySource" data-copy="source">Source</label>
+            <select id="maftySource" class="emby-select emby-select-withcolor maftySource" is="emby-select"></select>
+            <div class="selectArrowContainer"><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+          </div>
+          <p class="maftyPreviewFile"></p>
+          <section class="maftyDiscResult" aria-labelledby="maftyDiscTitle" hidden>
+            <h5 id="maftyDiscTitle" data-copy="discFormats">Disc formats</h5>
+            <p class="maftyDiscStatus" role="status"></p>
+          </section>
+          <p class="maftyDetailStatus" role="status"></p>
+          <ul class="maftyPreviewTracks"></ul>
+        </section>
+      </div>
+    </section>
+  </div></div>
+  <style>
+    .maftySubtitleTitlesPage .content-primary { max-width: 90rem; }
+    .maftySubtitleTitlesPage .maftyResultsHeader, .maftySubtitleTitlesPage .maftyPagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: .5em; }
+    .maftySubtitleTitlesPage .maftyResultsHeader h3 { margin-block: 0; }
+    .maftySubtitleTitlesPage .maftyBrowser { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(20em, 1fr); gap: 1.5em; align-items: start; }
+    .maftySubtitleTitlesPage .maftyGallery { min-width: 0; }
+    .maftySubtitleTitlesPage .maftyPosters { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 7.4em), 1fr)); gap: .55em; }
+    .maftySubtitleTitlesPage .maftyPoster { text-align: start; }
+    .maftySubtitleTitlesPage .maftyPoster .cardBox { margin: .28em; }
+    .maftySubtitleTitlesPage .maftyPoster[aria-pressed="true"] .cardBox,
+    .maftySubtitleTitlesPage .maftyPoster:focus-visible .cardBox { outline: .17em solid currentColor !important; outline-offset: .08em; }
+    .maftySubtitleTitlesPage .maftyPosterArt { aspect-ratio: 2 / 3; overflow: hidden; }
+    .maftySubtitleTitlesPage .maftyPosterArt img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .maftySubtitleTitlesPage .maftyPosterArt .material-icons { font-size: 2em; }
+    .maftySubtitleTitlesPage .maftyPosterCaption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .maftySubtitleTitlesPage .maftyPosterMeta { opacity: .7; font-size: .9em; }
+    .maftySubtitleTitlesPage .maftyPagination { margin-block-start: 1em; }
+    .maftySubtitleTitlesPage [hidden] { display: none; }
+    .maftySubtitleTitlesPage .maftyDetail { position: sticky; top: 5rem; max-height: 72vh; overflow: auto; overflow-wrap: anywhere; padding: 1.25em; scroll-margin-block-start: 5em; }
+    .maftySubtitleTitlesPage .maftyDetail .maftyReturn { display: none; }
+    .maftySubtitleTitlesPage .maftyDetail h4 { margin-block: 0 .6em; font-size: 1.2em; }
+    .maftySubtitleTitlesPage .maftyPreviewFile { margin-block: .3em .6em; opacity: .8; }
+    .maftySubtitleTitlesPage .maftyDiscResult { border-block-start: 1px solid var(--theme-border-color, rgba(128, 128, 128, .35)); padding-block: .7em; }
+    .maftySubtitleTitlesPage .maftyDiscResult h5 { margin: 0 0 .3em; font-size: 1em; }
+    .maftySubtitleTitlesPage .maftyDiscStatus { margin: 0; }
+    .maftySubtitleTitlesPage .maftyPreviewFile:empty, .maftySubtitleTitlesPage [role="status"]:empty { display: none; }
+    .maftySubtitleTitlesPage .maftyPreviewTracks { margin: 0; padding: 0; list-style: none; }
+    .maftySubtitleTitlesPage .maftyPreviewTrack { border-top: 1px solid; border-color: var(--theme-border-color, rgba(128, 128, 128, .35)); padding-block: .7em; }
+    .maftySubtitleTitlesPage .maftyPreviewTrackHeader { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35em .6em; }
+    .maftySubtitleTitlesPage .maftyTrackBadge { font-size: .86em; border: 1px solid; border-radius: .35em; padding: .1em .4em; opacity: .85; }
+    .maftySubtitleTitlesPage .maftySettings { max-width: 50rem; margin-block: 1.1em 1.6em; }
+    .maftySubtitleTitlesPage .maftySettings summary { cursor: pointer; font-size: 1.2em; margin-block-end: 1em; }
+    @media (max-width: 58em) {
+      .maftySubtitleTitlesPage .maftyBrowser { grid-template-columns: minmax(0, 1fr); }
+      .maftySubtitleTitlesPage .maftyDetail { position: static; max-height: none; }
+      .maftySubtitleTitlesPage .maftyDetail .maftyReturn:not([hidden]) { display: inline-flex; margin: 0 0 .7em; }
+    }
+    .maftySubtitleTitlesPage .maftyPreviewTitles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13em), 1fr)); gap: .55em 1em; margin: .45em 0 0; }
+    .maftySubtitleTitlesPage .maftyPreviewTitles dt { font-size: .86em; }
+    .maftySubtitleTitlesPage .maftyPreviewTitles dd { margin: .12em 0 0; }
+    .maftySubtitleTitlesPage .maftyPreviewSuggested { font-weight: 600; }
+  </style>
+  <script>
+  (() => {
+    const copy = {
+      name: ['mReel Media Inspector', 'mReel 媒体识别'],
+      intro: ['Browse subtitle and Blu-ray ISO results by poster. Scanning never changes media files.', '按海报查看字幕和蓝光 ISO 的识别结果。扫描和改名都不会修改媒体文件。'],
+      libraries: ['Media libraries', '媒体库'],
+      bitmap: ['Sample bitmap subtitles (PGS, VobSub, DVB, XSUB)', '抽样识别图片字幕（PGS、VobSub、DVB、XSUB）'],
+      bitmapHelp: ['Off by default. Reads short windows and runs one throttled OCR worker at a time. Leave off if the server overheats.', '默认关闭。只读取分散的短片段，同一时间只跑一个限速识别进程。服务器过热时请保持关闭。'],
+      reuse: ['Reuse matching subtitle tracks within a season', '同一季内复用相同规格的字幕识别结果'],
+      reuseHelp: ['Reuse an embedded track after two episodes with matching tracks agree. Uncertain tracks are scanned individually.', '同规格内封轨道在两集识别一致后才复用；不确定的轨道单独扫描，不影响同集其他轨道。'],
+      mode: ['What the task should do', '任务模式'],
+      preview: ['Preview only (no title changes)', '仅预览（不改标题）'],
+      apply: ['Apply suggested titles', '应用建议标题'],
+      restore: ['Restore original titles', '恢复原标题'],
+      save: ['Save', '保存'],
+      run: ['Run subtitle task', '运行字幕任务'],
+      discRun: ['Inspect disc formats', '识别光盘规格'],
+      discHelp: ['After the disc task finishes, refresh results and select a Blu-ray ISO title below.', '任务完成后，点击「刷新结果」，再选择对应的蓝光 ISO 海报。'],
+      discFormats: ['Disc formats', '光盘规格'],
+      discNotScanned: ['Not scanned. Run “Inspect disc formats” to check this source.', '未扫描。可运行「识别光盘规格」检查此片源。'],
+      discConfirmed: ['Confirmed: Dolby Vision Profile', '已确认：杜比视界 Profile'],
+      discUnconfirmed: ['Dolby Vision could not be confirmed. This does not rule it out.', '无法确认杜比视界，不代表此片源不含杜比视界。'],
+      discPlaylistUnconfirmed: ['Dolby Vision could not be confirmed: the playback playlist could not be verified.', '无法确认杜比视界：未能核实播放列表。'],
+      discNoEnhancement: ['Dolby Vision unconfirmed: no enhancement layer was found in the verified playlist.', '无法确认杜比视界：在已核实的播放列表中未发现增强层。'],
+      discFailed: ['Disc probe failed. See the Jellyfin log for details.', '探测失败。详情请查看 Jellyfin 日志。'],
+      discFileUnavailable: ['Disc probe failed: the ISO file is unavailable.', '探测失败：无法访问 ISO 文件。'],
+      readDisc: ['Could not read the disc result', '无法读取光盘结果'],
+      subtitleTask: ['Subtitles', '字幕'],
+      discTask: ['Blu-ray ISO Dolby Vision', '蓝光 ISO 杜比视界'],
+      idle: ['Not yet run', '尚未运行'],
+      refresh: ['Refresh results', '刷新结果'],
+      results: ['Media inspection results', '媒体识别结果'],
+      settings: ['Scan settings', '扫描设置'],
+      search: ['Find a movie or series', '搜索电影或剧集'],
+      back: ['Previous', '上一页'], next: ['Next', '下一页'],
+      page: ['Page', '第'], titles: ['titles', '部影片与剧集'],
+      movie: ['Movie', '电影'], series: ['Series', '剧集'],
+      source: ['Source version', '片源版本'], episode: ['Episode / source', '集数 / 片源'],
+      pick: ['Select a poster to view its inspection results.', '选择海报后，在这里查看识别结果。'],
+      returnGallery: ['Back to posters', '返回海报'],
+      noMatches: ['No titles match your search.', '没有匹配的影片或剧集。'],
+      loading: ['Loading…', '正在加载…'],
+      noTracks: ['No subtitle tracks were recorded for this source.', '当前片源没有字幕轨道记录。'],
+      noSubtitleResult: ['No subtitle scan recorded for this source.', '当前片源没有字幕扫描记录。'],
+      trackCount: ['Subtitle tracks', '字幕轨道'],
+      changed: ['Title change pending', '改名待应用'],
+      applied: ['Applied', '已应用'],
+      unchanged: ['Unchanged', '未变更'],
+      insufficient: ['Insufficient evidence', '识别证据不足'],
+      skipped: ['Skipped', '已跳过'],
+      failed: ['Scan failed', '扫描失败'],
+      manual: ['Manually changed', '已手动修改'],
+      notScanned: ['Not scanned', '未扫描'],
+      readTracks: ['Could not read subtitle tracks', '无法读取字幕轨道'],
+      conflict: ['Language conflict', '语言冲突'],
+      reused: ['Reused from this season', '同季复用'],
+      limitedEffects: ['Limited ASS effects', '少量 ASS 效果'],
+      fullEffects: ['Full effects', '完整特效'],
+      noAssEffects: ['No detectable ASS effects found', '未发现可检测的 ASS 效果'],
+      effectsNotChecked: ['Effects not checked', '未检测特效'],
+      current: ['Current Jellyfin title', 'Jellyfin 当前标题'],
+      original: ['Original title', '原标题'],
+      suggested: ['Suggested title', '建议标题'],
+      declaredLanguage: ['Language in original title', '原标题标注语言'],
+      detectedLanguage: ['Language from subtitle content', '识别出的语言'],
+      reason: ['Reason', '原因'],
+      bitmapDisabled: ['Bitmap subtitle sampling is disabled.', '图片字幕抽样识别已关闭。'],
+      missingDuration: ['Source duration is unavailable.', '无法获取片源时长。'],
+      scanFailed: ['Could not scan this subtitle track.', '无法扫描此字幕轨道。'],
+      sourceChanged: ['The source changed during the scan.', '扫描期间片源发生了变化。'],
+      unsupported: ['This subtitle format is not supported.', '不支持此字幕格式。'],
+      fileUnavailable: ['The subtitle or source file is unavailable.', '无法访问字幕文件或片源。'],
+      noTitle: ['Untitled', '无标题'],
+      track: ['Stream #', '轨道 #'],
+      empty: ['No scanned subtitles or Blu-ray ISO sources in the selected libraries.', '所选媒体库暂无字幕扫描记录或蓝光 ISO 片源。'],
+      missingTask: ['Scan task not registered.', '扫描任务未注册。'],
+      readStatus: ['Could not read scan status', '无法读取扫描状态'],
+      platform: ['The bundled tools require Linux x86-64.', '内置工具仅支持 Linux x86-64。'],
+      noBitmap: ['Bitmap OCR unavailable.', '图片字幕识别不可用。'],
+      readResults: ['Could not refresh results', '无法刷新扫描结果'],
+      selectLibrary: ['Select at least one media library.', '请至少选择一个媒体库。'],
+      saveFailed: ['Could not save settings', '无法保存设置'],
+      saved: ['Settings saved. No task was started.', '已保存设置，未启动扫描。'],
+      savedReadFailed: ['Settings saved, but could not check scan status', '设置已保存，但无法读取扫描状态'],
+      savedMissing: ['Settings saved, but the scan task was not found.', '设置已保存，但找不到扫描任务。'],
+      active: ['Settings saved. The scan task is already active.', '设置已保存，扫描任务已在运行。'],
+      startFailed: ['Settings saved, but could not confirm the scan started. Check Scheduled Tasks before trying again', '设置已保存，但无法确认扫描是否启动。请先查看计划任务再重试'],
+      started: ['Scan started. Use Refresh results to see its progress.', '已启动扫描。点击「刷新结果」查看进度。'],
+      loadFailed: ['Could not load settings or libraries', '无法加载设置或媒体库'],
+      Running: ['Running', '运行中'], Cancelling: ['Cancelling', '正在取消'],
+      Completed: ['Completed', '已完成'], Failed: ['Failed', '失败'], Cancelled: ['Cancelled', '已取消'], Aborted: ['Aborted', '已中止']
+    };
+    const plugin = 'ee4b9a4b-740c-49f4-b4ea-72fd212fc51e';
+    const subtitleKey = 'MaftySubtitleTitles';
+    const discKey = 'MaftyDiscVision';
+    const taskLabel = key => key === discKey ? 'discTask' : 'subtitleTask';
+    const readTasks = async () => new Map((await ApiClient.getScheduledTasks()).map(entry => [entry.Key, entry]));
+    const details = error => error?.status ? ' (HTTP ' + error.status + ')' : error?.message ? ' (' + error.message + ')' : '';
+    $('.maftySubtitleTitlesPage').on('pageshow', async function () {
+      const page = this;
+      const find = selector => page.querySelector(selector);
+      const locale = find('.maftyLocale');
+      const localeKey = 'maftySubtitleTitles.locale';
+      locale.value = localStorage.getItem(localeKey) || 'auto';
+      const t = key => copy[key]?.[(locale.value === 'zh' || (locale.value === 'auto'
+        && /^zh(?:-|$)/i.test(document.documentElement.lang || navigator.language))) ? 1 : 0] ?? key;
+      const localize = () => {
+        for (const node of page.querySelectorAll('[data-copy]')) node.textContent = t(node.dataset.copy);
+      };
+      localize();
+      const status = find('.maftyStatus');
+      const taskStatus = find('.maftyTaskStatus');
+      const resultsStatus = find('.maftyResultsStatus');
+      const libraries = find('.maftyLibraries');
+      const bitmap = find('.maftyBitmap');
+      const reuse = find('.maftyReuse');
+      const mode = find('.maftyMode');
+      const saveButton = find('.maftySave');
+      const run = find('.maftyRun');
+      const discRun = find('.maftyDiscRun');
+      const search = find('.maftySearch');
+      const gallery = find('.maftyGallery');
+      const posters = find('.maftyPosters');
+      const galleryStatus = find('.maftyGalleryStatus');
+      const pagination = find('.maftyPagination');
+      const back = find('.maftyBack');
+      const next = find('.maftyNext');
+      const detail = find('.maftyDetail');
+      const detailTitle = find('.maftyDetailTitle');
+      const returnButton = find('.maftyReturn');
+      const sourceChoice = find('.maftySourceChoice');
+      const sourceSelect = find('.maftySource');
+      const sourceLabel = find('.maftySourceLabel');
+      const detailFile = find('.maftyPreviewFile');
+      const discResult = find('.maftyDiscResult');
+      const discStatus = find('.maftyDiscStatus');
+      const detailStatus = find('.maftyDetailStatus');
+      const trackList = find('.maftyPreviewTracks');
+      const refreshButton = find('.maftyRefresh');
+      const element = (tag, text, className) => {
+        const node = document.createElement(tag);
+        if (text !== undefined) node.textContent = text;
+        if (className) node.className = className;
+        return node;
+      };
+      const resultUrl = 'MaftySubtitleTitles/Results';
+      const perPage = 24;
+      const stacked = matchMedia('(max-width: 58em)');
+      let catalog = [];
+      let galleryPage = 0;
+      let activePoster;
+      let activeSource;
+      let trackRequest = 0;
+      const formatName = source => {
+        const number = source.Season != null && source.Episode != null
+          ? 'S' + String(source.Season).padStart(2, '0') + 'E' + String(source.Episode).padStart(2, '0') : '';
+        return [number, source.Name].filter(Boolean).join(' · ');
+      };
+      const syncSelection = () => {
+        for (const card of posters.children) card.setAttribute('aria-pressed', String(card.dataset.id === activePoster?.Id));
+      };
+      const renderCatalog = () => {
+        const term = search.value.trim().toLocaleLowerCase();
+        const items = term ? catalog.filter(poster => (poster.Name + ' ' + (poster.Year ?? '')).toLocaleLowerCase().includes(term)) : catalog;
+        const pages = Math.max(1, Math.ceil(items.length / perPage));
+        galleryPage = Math.min(galleryPage, pages - 1);
+        const cards = document.createDocumentFragment();
+        for (const poster of items.slice(galleryPage * perPage, (galleryPage + 1) * perPage)) {
+          const name = poster.Name || t('noTitle');
+          const card = element('button', undefined, 'card maftyPoster');
+          card.type = 'button';
+          card.dataset.id = poster.Id;
+          card.title = name;
+          card.setAttribute('aria-controls', 'maftyDetails');
+          const box = element('div', undefined, 'cardBox visualCardBox');
+          const art = element('div', undefined, 'cardImageContainer maftyPosterArt defaultCardBackground');
+          const icon = element('span', undefined, 'material-icons ' + (poster.IsSeries ? 'tv' : 'movie'));
+          icon.setAttribute('aria-hidden', 'true');
+          art.append(icon);
+          if (poster.ImageId) {
+            const image = element('img');
+            image.alt = '';
+            image.loading = 'lazy';
+            image.onerror = () => image.remove();
+            image.src = ApiClient.getImageUrl(poster.ImageId, { type: 'Primary', maxWidth: 360, quality: 85 });
+            art.append(image);
+          }
+          const footer = element('div', undefined, 'cardFooter');
+          footer.append(element('div', name, 'maftyPosterCaption'),
+            element('div', [poster.Year, t(poster.IsSeries ? 'series' : 'movie')].filter(Boolean).join(' · '),
+              'maftyPosterCaption maftyPosterMeta'));
+          box.append(art, footer);
+          card.append(box);
+          card.onclick = () => {
+            choosePoster(poster, poster === activePoster ? activeSource?.Id : undefined);
+            if (stacked.matches) {
+              detailTitle.focus({ preventScroll: true });
+              detail.scrollIntoView({ block: 'start' });
+            }
+          };
+          cards.append(card);
+        }
+        posters.replaceChildren(cards);
+        syncSelection();
+        galleryStatus.textContent = items.length ? items.length + ' ' + t('titles') : t(term ? 'noMatches' : 'empty');
+        pagination.hidden = pages === 1;
+        back.disabled = galleryPage === 0;
+        next.disabled = galleryPage + 1 === pages;
+        find('.maftyPageNumber').textContent = t('page') + ' ' + (galleryPage + 1) + ' / ' + pages;
+      };
+      const renderTracks = rows => {
+        const tracks = document.createDocumentFragment();
+        for (const row of rows) {
+          const hasScanResult = row.Status !== 'skipped' && row.Status !== 'failed' && row.Status !== 'notScanned';
+          const track = element('li', undefined, 'maftyPreviewTrack');
+          const header = element('div', undefined, 'maftyPreviewTrackHeader');
+          const codec = row.Codec?.toUpperCase();
+          const format = ({ PGSSUB: 'PGS', HDMV_PGS_SUBTITLE: 'PGS', DVD_SUBTITLE: 'VobSub', DVDSUB: 'VobSub',
+            DVB_SUBTITLE: 'DVB', DVBSUB: 'DVB', SUBRIP: 'SRT' })[codec] ?? codec;
+          header.append(element('strong', t('track') + row.Index + (format ? ' · ' + format : '')));
+          const badge = key => header.append(element('span', t(key), 'maftyTrackBadge'));
+          badge(row.Status);
+          if (hasScanResult && row.Reused) badge('reused');
+          const effectBadge = ({ Limited: 'limitedEffects', Full: 'fullEffects', None: 'noAssEffects', NotChecked: 'effectsNotChecked' })[row.Effects];
+          if (effectBadge && (hasScanResult || row.Effects === 'NotChecked')) badge(effectBadge);
+          const titles = element('dl', undefined, 'maftyPreviewTitles');
+          const addTitle = (label, value, className) => {
+            const field = element('div');
+            field.append(element('dt', t(label)), element('dd', value, className));
+            titles.append(field);
+          };
+          addTitle('current', row.Current || t('noTitle'));
+          if (hasScanResult) {
+            addTitle('original', row.Original || t('noTitle'));
+            if (row.Status === 'changed' || (row.Status === 'conflict' && row.Suggested !== row.Current))
+              addTitle('suggested', row.Suggested || t('noTitle'), 'maftyPreviewSuggested');
+            if (row.DeclaredLanguage && row.DeclaredLanguage !== row.DetectedLanguage) addTitle('declaredLanguage', row.DeclaredLanguage);
+            if (row.DetectedLanguage) addTitle('detectedLanguage', row.DetectedLanguage);
+          }
+          if (row.Reason) addTitle('reason', t(row.Reason));
+          track.append(header, titles);
+          tracks.append(track);
+        }
+        trackList.replaceChildren(tracks);
+        detailStatus.textContent = rows.length ? t('trackCount') + ' · ' + rows.length : t('noTracks');
+      };
+      const renderDisc = result => {
+        if (result.Status === 'confirmed' && Number.isInteger(result.DolbyVisionProfile)) {
+          discStatus.textContent = t('discConfirmed') + ' ' + result.DolbyVisionProfile;
+          return;
+        }
+        const label = ({ 'not-scanned': 'discNotScanned', 'playlist-unconfirmed': 'discPlaylistUnconfirmed',
+          'no-enhancement-layer': 'discNoEnhancement', failed: 'discFailed',
+          'file-unavailable': 'discFileUnavailable' })[result.Status];
+        discStatus.textContent = t(label ?? 'discUnconfirmed');
+      };
+      const loadDetails = source => {
+        activeSource = source;
+        const request = ++trackRequest;
+        detail.scrollTop = 0;
+        detailFile.textContent = source ? [activePoster.IsSeries && sourceChoice.hidden ? formatName(source) : '', source.File]
+          .filter(Boolean).join(' · ') : '';
+        discResult.hidden = !source?.DiscItemId;
+        discStatus.textContent = discResult.hidden ? '' : t('loading');
+        detailStatus.textContent = t(!source ? 'pick' : source.HasSubtitleResult ? 'loading' : 'noSubtitleResult');
+        trackList.replaceChildren();
+        if (!source) return;
+        const load = async (path, render, status, errorKey) => {
+          try {
+            const result = await ApiClient.getJSON(ApiClient.getUrl(path));
+            if (request === trackRequest) render(result);
+          } catch (error) {
+            if (request !== trackRequest) return;
+            console.error(error);
+            status.textContent = t(errorKey) + details(error) + '.';
+          }
+        };
+        if (source.DiscItemId) void load(resultUrl + '/' + source.DiscItemId + '/' + source.Id + '/Disc',
+          renderDisc, discStatus, 'readDisc');
+        if (source.HasSubtitleResult) void load(resultUrl + '/' + source.Id, renderTracks, detailStatus, 'readTracks');
+      };
+      const choosePoster = (poster, previousSourceId) => {
+        activePoster = poster;
+        detailTitle.textContent = poster?.Name || t('results');
+        returnButton.hidden = !poster;
+        sourceChoice.hidden = !poster || poster.Sources.length < 2;
+        sourceSelect.replaceChildren();
+        const source = poster?.Sources.find(item => item.Id === previousSourceId) ?? poster?.Sources[0];
+        if (poster && !sourceChoice.hidden) {
+          sourceLabel.textContent = t(poster.IsSeries ? 'episode' : 'source');
+          const labels = poster.Sources.map(item => poster.IsSeries ? formatName(item) || item.File : item.File || item.Name);
+          const counts = new Map();
+          for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1);
+          for (const [index, item] of poster.Sources.entries()) {
+            const label = labels[index];
+            const option = element('option', counts.get(label) > 1 && item.File !== label && item.File
+              ? label + ' — ' + item.File : label);
+            option.value = item.Id;
+            sourceSelect.append(option);
+          }
+          sourceSelect.value = source.Id;
+        }
+        syncSelection();
+        loadDetails(source);
+      };
+      sourceSelect.onchange = () => loadDetails(activePoster.Sources.find(source => source.Id === sourceSelect.value));
+      returnButton.onclick = () => {
+        const card = posters.querySelector('[aria-pressed="true"]');
+        const target = card || search;
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({ block: 'center' });
+      };
+      search.oninput = () => { galleryPage = 0; renderCatalog(); };
+      const changePage = offset => {
+        galleryPage += offset;
+        renderCatalog();
+        search.focus({ preventScroll: true });
+        gallery.scrollIntoView({ block: 'start' });
+      };
+      back.onclick = () => changePage(-1);
+      next.onclick = () => changePage(1);
+      detailStatus.textContent = t('pick');
+      galleryStatus.textContent = t('loading');
+      let busy = true;
+      let loaded = false;
+      let textAvailable;
+      let tasks = new Map();
+      const isActive = key => tasks.has(key) && tasks.get(key).State !== 'Idle';
+      const showTasks = () => {
+        taskStatus.textContent = [subtitleKey, discKey].map(key => {
+          const task = tasks.get(key);
+          const state = task?.State === 'Idle' ? task.LastExecutionResult?.Status || 'idle' : task?.State || 'missingTask';
+          const progress = task?.State === 'Running' && Number.isFinite(task.CurrentProgressPercentage)
+            ? ' ' + Math.floor(task.CurrentProgressPercentage) + '%' : '';
+          return t(taskLabel(key)) + ': ' + t(state) + progress;
+        }).join(' · ');
+      };
+      const updateButtons = () => {
+        saveButton.disabled = busy || !loaded;
+        run.disabled = busy || !loaded || isActive(subtitleKey) || (textAvailable === false && mode.value !== 'restore');
+        discRun.disabled = busy || !loaded || isActive(discKey);
+      };
+      let refreshing = false;
+      const refresh = async () => {
+        if (refreshing) return;
+        refreshing = true;
+        refreshButton.disabled = true;
+        try {
+          const [results, scheduled] = await Promise.allSettled([
+            ApiClient.getJSON(ApiClient.getUrl(resultUrl)),
+            readTasks()
+          ]);
+          const messages = [];
+          if (scheduled.status === 'fulfilled') {
+            tasks = scheduled.value;
+            showTasks();
+          } else {
+            console.error(scheduled.reason);
+            messages.push(t('readStatus') + details(scheduled.reason) + '.');
+          }
+          if (results.status === 'fulfilled') {
+            const result = results.value;
+            textAvailable = result.TextAvailable;
+            bitmap.disabled = !result.BitmapAvailable;
+            catalog = result.Posters;
+            renderCatalog();
+            choosePoster(catalog.find(poster => poster.Id === activePoster?.Id), activeSource?.Id);
+            if (!textAvailable) messages.push(t('platform'));
+            else if (!result.BitmapAvailable) messages.push(t('noBitmap'));
+          } else {
+            console.error(results.reason);
+            galleryStatus.textContent = t('readResults') + details(results.reason) + '.';
+          }
+          resultsStatus.textContent = messages.join(' ');
+          updateButtons();
+        } finally {
+          refreshing = false;
+          refreshButton.disabled = false;
+        }
+      };
+      const save = async (key) => {
+        if (busy || !loaded) return;
+        const ids = [...libraries.querySelectorAll('input:checked')].map(input => input.value);
+        if (!ids.length) { status.textContent = t('selectLibrary'); return; }
+        busy = true;
+        updateButtons();
+        let failure = 'saveFailed';
+        try {
+          await ApiClient.updatePluginConfiguration(plugin, { LibraryIds: ids, EnableBitmapOcr: !bitmap.disabled && bitmap.checked,
+            ApplyTitles: mode.value === 'apply', RestoreTitles: mode.value === 'restore', ReuseSeasonSubtitles: reuse.checked });
+          if (!key) {
+            status.textContent = t('saved');
+            return;
+          }
+          failure = 'savedReadFailed';
+          tasks = await readTasks();
+          const task = tasks.get(key);
+          showTasks();
+          if (!task || !task.Id) {
+            status.textContent = t(taskLabel(key)) + ': ' + t('savedMissing');
+            return;
+          }
+          if (task.State !== 'Idle') {
+            status.textContent = t(taskLabel(key)) + ': ' + t('active');
+            return;
+          }
+          failure = 'startFailed';
+          await ApiClient.startScheduledTask(task.Id);
+          tasks.set(key, { ...task, State: 'Running' });
+          showTasks();
+          status.textContent = t(taskLabel(key)) + ': ' + t('started');
+        } catch (error) {
+          console.error(error);
+          status.textContent = t(failure) + details(error) + '.';
+        } finally {
+          busy = false;
+          updateButtons();
+        }
+      };
+      updateButtons();
+      find('form').onsubmit = event => { event.preventDefault(); void save(); };
+      run.onclick = () => void save(subtitleKey);
+      discRun.onclick = () => void save(discKey);
+      refreshButton.onclick = () => { if (!busy) void refresh(); };
+      mode.onchange = updateButtons;
+      locale.onchange = () => {
+        localStorage.setItem(localeKey, locale.value);
+        localize();
+        status.textContent = '';
+        if (!busy) void refresh();
+      };
+      try {
+        const [config, folders] = await Promise.all([ApiClient.getPluginConfiguration(plugin), ApiClient.getVirtualFolders()]);
+        const selected = new Set((config.LibraryIds || []).map(id => id.replaceAll('-', '').toLowerCase()));
+        const choices = document.createDocumentFragment();
+        for (const item of folders) {
+          const choice = find('.maftyLibraryChoice').content.cloneNode(true);
+          const input = choice.querySelector('input');
+          input.value = item.ItemId;
+          input.checked = selected.has(item.ItemId.replaceAll('-', '').toLowerCase());
+          choice.querySelector('span').textContent = item.Name;
+          choices.append(choice);
+        }
+        libraries.replaceChildren(choices);
+        bitmap.checked = !!config.EnableBitmapOcr;
+        reuse.checked = !!config.ReuseSeasonSubtitles;
+        mode.value = config.RestoreTitles ? 'restore' : config.ApplyTitles ? 'apply' : 'preview';
+        loaded = true;
+        await refresh();
+      } catch (error) {
+        console.error(error);
+        status.textContent = t('loadFailed') + details(error) + '.';
+      } finally {
+        busy = false;
+        updateButtons();
+      }
+    });
+  })();
+  </script>
+</div>
+</body>
+</html>

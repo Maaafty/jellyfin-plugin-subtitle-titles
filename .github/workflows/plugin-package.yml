@@ -1,0 +1,65 @@
+name: Build Jellyfin plugin package
+
+on:
+  push:
+    paths:
+      - 'Server/SubtitleTitles/**'
+      - '.github/workflows/plugin-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Compile plugin and check the dashboard script
+        run: |
+          dotnet build Server/SubtitleTitles/SubtitleTitles.csproj -c Release --artifacts-path "$RUNNER_TEMP/plugin-build"
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('Server/SubtitleTitles/Settings.html').read_text()
+          Path('/tmp/mreel-settings.js').write_text(re.search(r'<script>(.*?)</script>', html, re.S).group(1))
+          PY
+          node --check /tmp/mreel-settings.js
+      - name: Package with the unchanged v1.11.0 native runtime
+        env:
+          RELEASES: https://github.com/${{ github.repository }}/releases/download
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import xml.etree.ElementTree as E; print(E.parse("Server/SubtitleTitles/SubtitleTitles.csproj").findtext(".//Version"))')
+          old="$RELEASES/v1.11.0"
+          name="mafty-subtitle-titles-$version"
+          archive="$name-linux-x64.zip"
+          dll=Jellyfin.Plugin.MaftySubtitleTitles.dll
+          mkdir release
+          curl -fsSL --retry 3 "$old/mafty-subtitle-titles-1.11.0-source.zip" -o "$RUNNER_TEMP/previous-source.zip"
+          for file in bitmap-ocr.cpp package-runtime.sh; do
+            path="Server/SubtitleTitles/$file"
+            unzip -p "$RUNNER_TEMP/previous-source.zip" "$path" | cmp - "$path"
+          done
+          curl -fsSL --retry 3 "$old/mafty-subtitle-titles-1.11.0-linux-x64.zip" -o "release/$archive"
+          echo "c93649ca9e0026945bed496350f442e7ad269263171473def5ac302d93ed70ee  release/$archive" | sha256sum -c -
+          zip -d "release/$archive" "$dll"
+          zip -j "release/$archive" "$RUNNER_TEMP/plugin-build/bin/SubtitleTitles/release/$dll"
+          unzip -tq "release/$archive"
+          unzip -p "release/$archive" "$dll" | cmp - "$RUNNER_TEMP/plugin-build/bin/SubtitleTitles/release/$dll"
+          git archive --format=zip -o "release/$name-source.zip" HEAD Server/SubtitleTitles
+          curl -fsSL --retry 3 "$old/manifest.json" -o "$RUNNER_TEMP/previous-manifest.json"
+          jq -e --arg version "$version.0" --arg url "$RELEASES/v$version/$archive" \
+            --arg checksum "$(md5sum "release/$archive" | cut -d' ' -f1)" --arg timestamp "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --arg changelog "Blu-ray ISO results in the poster browser. Unchanged native dependencies; corresponding sources: $old/mafty-subtitle-titles-1.11.0-linux-x64-dependency-sources.tar" \
+            'if .[0].versions[0].version == "1.11.0.0" and ([.[0].versions[].version] | index($version) | not) then
+                .[0].versions |= ([{version: $version, targetAbi: .[0].targetAbi, sourceUrl: $url, checksum: $checksum, timestamp: $timestamp, changelog: $changelog}] + .)
+             else error("unexpected baseline catalog") end' "$RUNNER_TEMP/previous-manifest.json" > release/manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jellyfin-release
+          path: release/
+          if-no-files-found: error
