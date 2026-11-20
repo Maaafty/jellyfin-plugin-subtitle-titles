@@ -30,9 +30,6 @@ internal sealed class BundledTools(string pluginDirectory)
     internal Task<string> PredictLanguages(string input, CancellationToken ct) =>
         Run("fasttext", ["predict-prob", Path.Combine(_root, "lid.176.ftz"), input, "1"], ct);
 
-    internal async Task<string> ReadSingleDiscPlaylist(string path, CancellationToken ct) =>
-        (await Run("bitmap-ocr", ["--single-playlist", path], ct).ConfigureAwait(false)).Trim();
-
     internal Task<BitmapImage[]> ReadBitmap(string path, int index, double seconds, string? sampleFile, CancellationToken ct)
     {
         var track = index.ToString(CultureInfo.InvariantCulture);

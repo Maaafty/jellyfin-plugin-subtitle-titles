@@ -49,13 +49,14 @@ jobs:
           zip -d "release/$archive" "$dll"
           zip -j "release/$archive" "$RUNNER_TEMP/plugin-build/bin/SubtitleTitles/release/$dll"
           unzip -tq "release/$archive"
+          unzip -Z1 "release/$archive" | grep -Fx 'runtime/linux-x64/lib/libudfread.so.0'
           unzip -p "release/$archive" "$dll" | cmp - "$RUNNER_TEMP/plugin-build/bin/SubtitleTitles/release/$dll"
           git archive --format=zip -o "release/$name-source.zip" HEAD Server/SubtitleTitles
-          curl -fsSL --retry 3 "$old/manifest.json" -o "$RUNNER_TEMP/previous-manifest.json"
+          curl -fsSL --retry 3 "$RELEASES/v1.12.0/manifest.json" -o "$RUNNER_TEMP/previous-manifest.json"
           jq -e --arg version "$version.0" --arg url "$RELEASES/v$version/$archive" \
             --arg checksum "$(md5sum "release/$archive" | cut -d' ' -f1)" --arg timestamp "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-            --arg changelog "Blu-ray ISO results in the poster browser. Unchanged native dependencies; corresponding sources: $old/mafty-subtitle-titles-1.11.0-linux-x64-dependency-sources.tar" \
-            'if .[0].versions[0].version == "1.11.0.0" and ([.[0].versions[].version] | index($version) | not) then
+            --arg changelog "Per-playlist Blu-ray editions and Dolby Vision for ISO and BDMV. Unchanged native dependencies; corresponding sources: $old/mafty-subtitle-titles-1.11.0-linux-x64-dependency-sources.tar" \
+            'if .[0].versions[0].version == "1.12.0.0" and ([.[0].versions[].version] | index($version) | not) then
                 .[0].versions |= ([{version: $version, targetAbi: .[0].targetAbi, sourceUrl: $url, checksum: $checksum, timestamp: $timestamp, changelog: $changelog}] + .)
              else error("unexpected baseline catalog") end' "$RUNNER_TEMP/previous-manifest.json" > release/manifest.json
       - uses: actions/upload-artifact@v4

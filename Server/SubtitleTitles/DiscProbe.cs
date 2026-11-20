@@ -9,22 +9,14 @@ internal static class DiscProbe
     private const string BasePid = "0x1011";
     private const string EnhancementPid = "0x1015";
 
-    internal static async Task<Result> Inspect(string ffprobe, string path, string solePlaylist, CancellationToken ct)
+    internal static async Task<Result> InspectPlaylist(string ffprobe, string path, int playlist, CancellationToken ct)
     {
-        // FFprobe's "usable playlists" list omits candidates Aether can select.
-        // Require the actual PLAYLIST directory to have only one candidate, and
-        // check that FFprobe's default open (like Jellyfin's) selects that file.
-        var name = solePlaylist.AsSpan().Trim();
-        if (name.Length != 10 || !name.EndsWith(".mpls", StringComparison.Ordinal)
-            || !int.TryParse(name[..5], NumberStyles.None, CultureInfo.InvariantCulture, out int playlist))
-            return new("playlist-unconfirmed");
-
         var input = "bluray:" + path;
-        string[] bounds = ["-probesize", "16777216", "-analyzeduration", "5000000"];
-        var (output, diagnostics) = await Tool.RunWithDiagnostics(ffprobe,
-            ["-hide_banner", "-v", "info", ..bounds, "-show_streams", "-of", "json", input], ct, TimeSpan.FromSeconds(20)).ConfigureAwait(false);
-        if (DiscSubtitleProbe.SelectedPlaylist(diagnostics) != playlist) return new("playlist-unconfirmed");
-        using var streams = JsonDocument.Parse(output);
+        var selected = playlist.ToString(CultureInfo.InvariantCulture);
+        string[] bounds = ["-playlist", selected, "-probesize", "16777216", "-analyzeduration", "5000000",
+            "-skip_estimate_duration_from_pts", "1"];
+        using var streams = JsonDocument.Parse(await Tool.Run(ffprobe,
+            ["-v", "error", ..bounds, "-show_streams", "-of", "json", input], ct, TimeSpan.FromSeconds(20)).ConfigureAwait(false));
         var video = streams.RootElement.GetProperty("streams");
         if (!video.EnumerateArray().Any(stream => IsHevc(stream, BasePid))) return new("unknown");
         if (!video.EnumerateArray().Any(stream => IsHevc(stream, EnhancementPid))) return new("no-enhancement-layer", VerifiedPlaylist: playlist);
@@ -32,7 +24,7 @@ internal static class DiscProbe
         // Presence of a secondary HEVC stream alone is not proof it carries Dolby Vision.
         // Pin the packet probe to the exact playlist used for the stream probe.
         using var packets = JsonDocument.Parse(await Tool.Run(ffprobe, ["-v", "error", ..bounds,
-            "-playlist", playlist.ToString(CultureInfo.InvariantCulture), "-read_intervals", "%+#96",
+            "-read_intervals", "%+#96",
             "-select_streams", "i:" + EnhancementPid, "-show_packets", "-show_data", "-show_entries", "packet=data", "-of", "json", input], ct, TimeSpan.FromSeconds(20)).ConfigureAwait(false));
         if (packets.RootElement.TryGetProperty("packets", out var found)
             && found.EnumerateArray().Any(packet => packet.TryGetProperty("data", out var data) && HasRpu(data.GetString() ?? "")))

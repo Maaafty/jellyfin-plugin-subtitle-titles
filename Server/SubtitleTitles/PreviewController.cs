@@ -24,7 +24,6 @@ public sealed class PreviewController(IApplicationPaths paths, ILibraryManager l
     public sealed record Subtitle(int Index, string Codec, string? Original, string? Suggested, string? Previous,
         string Status, bool Reused, string? Effects, string? DeclaredLanguage, string? DetectedLanguage,
         string? Current, string? Reason);
-    public sealed record Disc(string Status, int? DolbyVisionProfile);
 
     [HttpGet]
     public Catalog Get(CancellationToken ct)
@@ -59,7 +58,7 @@ public sealed class PreviewController(IApplicationPaths paths, ILibraryManager l
                     ct.ThrowIfCancellationRequested();
                     foreach (var source in item.GetMediaSources(false))
                     {
-                        if (!DiscCache.IsIso(source.Path) || !Guid.TryParse(source.Id, out var id) || !seen.Add(id)) continue;
+                        if (!DiscVolume.IsDisc(source.Path) || !Guid.TryParse(source.Id, out var id) || !seen.Add(id)) continue;
                         var version = id != item.Id && library.GetItemById(id) is Video video
                             && video.GetAncestorIds().Any(selected.Contains) ? video : item;
                         AddSource(version, id, source.Path, hasSubtitleResult: false, discItemId: item.Id);
@@ -112,16 +111,15 @@ public sealed class PreviewController(IApplicationPaths paths, ILibraryManager l
     }
 
     [HttpGet("{itemId:guid}/{sourceId:guid}/Disc")]
-    public async Task<ActionResult<Disc>> GetDisc(Guid itemId, Guid sourceId, CancellationToken ct)
+    public async Task<ActionResult<DiscEditionCatalog>> GetDisc(Guid itemId, Guid sourceId, CancellationToken ct)
     {
         var plugin = Plugin.Instance ?? throw new InvalidOperationException("Plugin not initialized");
         var selected = plugin.Configuration.LibraryIds.ToHashSet();
         if (selected.Count == 0 || library.GetItemById(itemId) is not { } item
             || !item.GetAncestorIds().Any(selected.Contains)) return NotFound();
         var source = item.GetMediaSources(false).FirstOrDefault(source => Guid.TryParse(source.Id, out var id) && id == sourceId);
-        if (source?.Path is not { } path || !DiscCache.IsIso(path)) return NotFound();
-        var result = await new DiscCache(paths.DataPath).Read(sourceId, DiscCache.Stamp.ForProbe(path), ct).ConfigureAwait(false);
-        return new Disc(result?.Status ?? "not-scanned", result?.Profile);
+        if (source?.Path is not { } path || !DiscVolume.IsDisc(path)) return NotFound();
+        return await new DiscEditionStore(paths.DataPath).Describe(path, sourceId, ct).ConfigureAwait(false);
     }
 
     private static Subtitle DescribeTrack(ScanTask.ScanRecord record, ScanTask.TrackIdentity? identity, MediaStream stream)

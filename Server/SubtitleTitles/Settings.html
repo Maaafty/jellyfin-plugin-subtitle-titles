@@ -5,7 +5,7 @@
 <div data-role="page" class="page type-interior pluginConfigurationPage maftySubtitleTitlesPage" data-require="emby-button,emby-checkbox,emby-input,emby-select">
   <div data-role="content"><div class="content-primary">
     <h2 class="sectionTitle" data-copy="name">mReel Media Inspector</h2>
-    <p class="fieldDescription" data-copy="intro">Browse subtitle and Blu-ray ISO results by poster. Scanning never changes media files.</p>
+    <p class="fieldDescription" data-copy="intro">Browse subtitle and Blu-ray results (ISO or BDMV) by poster. Scanning never changes media files.</p>
     <details class="maftySettings">
       <summary data-copy="settings">Scan settings</summary>
     <form>
@@ -34,8 +34,8 @@
       </div>
       <button is="emby-button" type="submit" class="emby-button raised button-submit block maftySave"><span data-copy="save">Save</span></button>
       <button is="emby-button" type="button" class="emby-button raised block maftyRun"><span data-copy="run">Run subtitle task</span></button>
-      <button is="emby-button" type="button" class="emby-button raised block maftyDiscRun"><span data-copy="discRun">Inspect disc formats</span></button>
-      <p class="fieldDescription" data-copy="discHelp">After the disc task finishes, refresh results and select a Blu-ray ISO title below.</p>
+      <button is="emby-button" type="button" class="emby-button raised block maftyDiscRun"><span data-copy="discRun">Inspect Blu-ray editions</span></button>
+      <p class="fieldDescription" data-copy="discHelp">Run the disc task to check playlists for Dolby Vision. After it finishes, refresh results and select a Blu-ray ISO or BDMV source below.</p>
       <p class="maftyStatus" role="status"></p>
     </form>
     </details>
@@ -70,8 +70,9 @@
           </div>
           <p class="maftyPreviewFile"></p>
           <section class="maftyDiscResult" aria-labelledby="maftyDiscTitle" hidden>
-            <h5 id="maftyDiscTitle" data-copy="discFormats">Disc formats</h5>
+            <h5 id="maftyDiscTitle" data-copy="discEditions">Blu-ray editions</h5>
             <p class="maftyDiscStatus" role="status"></p>
+            <div class="maftyDiscEditions"></div>
           </section>
           <p class="maftyDetailStatus" role="status"></p>
           <ul class="maftyPreviewTracks"></ul>
@@ -104,6 +105,11 @@
     .maftySubtitleTitlesPage .maftyDiscResult { border-block-start: 1px solid var(--theme-border-color, rgba(128, 128, 128, .35)); padding-block: .7em; }
     .maftySubtitleTitlesPage .maftyDiscResult h5 { margin: 0 0 .3em; font-size: 1em; }
     .maftySubtitleTitlesPage .maftyDiscStatus { margin: 0; }
+    .maftySubtitleTitlesPage .maftyDiscEditions h6 { margin: .75em 0 .3em; font-size: .95em; }
+    .maftySubtitleTitlesPage .maftyDiscGroups, .maftySubtitleTitlesPage .maftyDiscPlaylists { margin: 0; padding: 0; list-style: none; }
+    .maftySubtitleTitlesPage .maftyDiscGroups > li, .maftySubtitleTitlesPage .maftyDiscPlaylists > li { padding-block: .4em; }
+    .maftySubtitleTitlesPage .maftyDiscPlaylists { border-inline-start: 1px solid var(--theme-border-color, rgba(128, 128, 128, .35)); padding-inline-start: .75em; }
+    .maftySubtitleTitlesPage .maftyDiscGroupNote, .maftySubtitleTitlesPage .maftyDiscPlaylistStatus { margin: .15em 0 0; font-size: .9em; }
     .maftySubtitleTitlesPage .maftyPreviewFile:empty, .maftySubtitleTitlesPage [role="status"]:empty { display: none; }
     .maftySubtitleTitlesPage .maftyPreviewTracks { margin: 0; padding: 0; list-style: none; }
     .maftySubtitleTitlesPage .maftyPreviewTrack { border-top: 1px solid; border-color: var(--theme-border-color, rgba(128, 128, 128, .35)); padding-block: .7em; }
@@ -125,7 +131,7 @@
   (() => {
     const copy = {
       name: ['mReel Media Inspector', 'mReel 媒体识别'],
-      intro: ['Browse subtitle and Blu-ray ISO results by poster. Scanning never changes media files.', '按海报查看字幕和蓝光 ISO 的识别结果。扫描和改名都不会修改媒体文件。'],
+      intro: ['Browse subtitle and Blu-ray results (ISO or BDMV) by poster. Scanning never changes media files.', '按海报查看字幕和蓝光（ISO 或 BDMV）的识别结果。扫描和改名都不会修改媒体文件。'],
       libraries: ['Media libraries', '媒体库'],
       bitmap: ['Sample bitmap subtitles (PGS, VobSub, DVB, XSUB)', '抽样识别图片字幕（PGS、VobSub、DVB、XSUB）'],
       bitmapHelp: ['Off by default. Reads short windows and runs one throttled OCR worker at a time. Leave off if the server overheats.', '默认关闭。只读取分散的短片段，同一时间只跑一个限速识别进程。服务器过热时请保持关闭。'],
@@ -137,19 +143,24 @@
       restore: ['Restore original titles', '恢复原标题'],
       save: ['Save', '保存'],
       run: ['Run subtitle task', '运行字幕任务'],
-      discRun: ['Inspect disc formats', '识别光盘规格'],
-      discHelp: ['After the disc task finishes, refresh results and select a Blu-ray ISO title below.', '任务完成后，点击「刷新结果」，再选择对应的蓝光 ISO 海报。'],
-      discFormats: ['Disc formats', '光盘规格'],
-      discNotScanned: ['Not scanned. Run “Inspect disc formats” to check this source.', '未扫描。可运行「识别光盘规格」检查此片源。'],
+      discRun: ['Inspect Blu-ray editions', '识别蓝光版本'],
+      discHelp: ['Run the disc task to check playlists for Dolby Vision. After it finishes, refresh results and select a Blu-ray ISO or BDMV source below.', '运行光盘任务以检查播放列表的杜比视界规格。任务完成后，刷新结果并在下方选择蓝光 ISO 或 BDMV 片源。'],
+      discEditions: ['Blu-ray editions', '蓝光版本'],
+      discNoPlaylists: ['No usable Blu-ray playlists were found.', '未找到可用的蓝光播放列表。'],
+      discPlaylistCount: ['Playlists shown:', '显示的播放列表：'],
+      discEvidenced: ['Editions with disc evidence', '有光盘证据的版本'],
+      discCandidates: ['Other playlist candidates', '其他候选播放列表'],
+      discAuthored: ['Authored metadata', '光盘制作元数据'],
+      discNavigation: ['HDMV navigation', 'HDMV 导航'],
+      discCandidate: ['Unverified candidate', '未验证的候选'],
+      discGroupNote: ['Same clip sequence and timing; chapters and tracks may differ.', '片段顺序和时间范围相同；章节和轨道可能不同。'],
       discConfirmed: ['Confirmed: Dolby Vision Profile', '已确认：杜比视界 Profile'],
-      discUnconfirmed: ['Dolby Vision could not be confirmed. This does not rule it out.', '无法确认杜比视界，不代表此片源不含杜比视界。'],
-      discPlaylistUnconfirmed: ['Dolby Vision could not be confirmed: the playback playlist could not be verified.', '无法确认杜比视界：未能核实播放列表。'],
-      discNoEnhancement: ['Dolby Vision unconfirmed: no enhancement layer was found in the verified playlist.', '无法确认杜比视界：在已核实的播放列表中未发现增强层。'],
-      discFailed: ['Disc probe failed. See the Jellyfin log for details.', '探测失败。详情请查看 Jellyfin 日志。'],
-      discFileUnavailable: ['Disc probe failed: the ISO file is unavailable.', '探测失败：无法访问 ISO 文件。'],
+      discUnconfirmed: ['Dolby Vision could not be confirmed for this playlist.', '无法确认此播放列表是否包含杜比视界。'],
+      discNoEnhancement: ['No Dolby Vision enhancement layer found in this playlist.', '在此播放列表中未发现杜比视界增强层。'],
+      discFailed: ['Playlist probe failed. See the Jellyfin log for details.', '播放列表探测失败。详情请查看 Jellyfin 日志。'],
       readDisc: ['Could not read the disc result', '无法读取光盘结果'],
       subtitleTask: ['Subtitles', '字幕'],
-      discTask: ['Blu-ray ISO Dolby Vision', '蓝光 ISO 杜比视界'],
+      discTask: ['Blu-ray editions and Dolby Vision', '蓝光版本与杜比视界'],
       idle: ['Not yet run', '尚未运行'],
       refresh: ['Refresh results', '刷新结果'],
       results: ['Media inspection results', '媒体识别结果'],
@@ -195,7 +206,7 @@
       fileUnavailable: ['The subtitle or source file is unavailable.', '无法访问字幕文件或片源。'],
       noTitle: ['Untitled', '无标题'],
       track: ['Stream #', '轨道 #'],
-      empty: ['No scanned subtitles or Blu-ray ISO sources in the selected libraries.', '所选媒体库暂无字幕扫描记录或蓝光 ISO 片源。'],
+      empty: ['No scanned subtitles or Blu-ray (ISO or BDMV) sources in the selected libraries.', '所选媒体库暂无字幕扫描记录或蓝光（ISO 或 BDMV）片源。'],
       missingTask: ['Scan task not registered.', '扫描任务未注册。'],
       readStatus: ['Could not read scan status', '无法读取扫描状态'],
       platform: ['The bundled tools require Linux x86-64.', '内置工具仅支持 Linux x86-64。'],
@@ -257,6 +268,7 @@
       const detailFile = find('.maftyPreviewFile');
       const discResult = find('.maftyDiscResult');
       const discStatus = find('.maftyDiscStatus');
+      const discEditions = find('.maftyDiscEditions');
       const detailStatus = find('.maftyDetailStatus');
       const trackList = find('.maftyPreviewTracks');
       const refreshButton = find('.maftyRefresh');
@@ -367,15 +379,67 @@
         trackList.replaceChildren(tracks);
         detailStatus.textContent = rows.length ? t('trackCount') + ' · ' + rows.length : t('noTracks');
       };
-      const renderDisc = result => {
-        if (result.Status === 'confirmed' && Number.isInteger(result.DolbyVisionProfile)) {
-          discStatus.textContent = t('discConfirmed') + ' ' + result.DolbyVisionProfile;
-          return;
+      const renderDisc = ({ Editions }) => {
+        const translated = (tag, key, className) => {
+          const node = element(tag, t(key), className);
+          node.dataset.copy = key;
+          return node;
+        };
+        const evidenceGroups = new Map();
+        const candidateGroups = new Map();
+        for (const edition of Editions) {
+          const groups = edition.Evidence === 'authored' || edition.Evidence === 'navigation' ? evidenceGroups : candidateGroups;
+          if (!groups.has(edition.ContentGroup)) groups.set(edition.ContentGroup, []);
+          groups.get(edition.ContentGroup).push(edition);
         }
-        const label = ({ 'not-scanned': 'discNotScanned', 'playlist-unconfirmed': 'discPlaylistUnconfirmed',
-          'no-enhancement-layer': 'discNoEnhancement', failed: 'discFailed',
-          'file-unavailable': 'discFileUnavailable' })[result.Status];
-        discStatus.textContent = t(label ?? 'discUnconfirmed');
+        const pad = value => String(value).padStart(2, '0');
+        const addPlaylist = (item, edition) => {
+          const header = element('div', undefined, 'maftyPreviewTrackHeader');
+          const title = edition.Name ? edition.Name + ' · ' + edition.Playlist : edition.Playlist;
+          const evidence = ({ authored: 'discAuthored', navigation: 'discNavigation' })[edition.Evidence] ?? 'discCandidate';
+          const seconds = Math.floor(edition.DurationSeconds);
+          const duration = Math.floor(seconds / 3600) + ':' + pad(Math.floor(seconds / 60) % 60) + ':' + pad(seconds % 60);
+          header.append(element('strong', title), element('span', duration), translated('span', evidence, 'maftyTrackBadge'));
+          const status = element('p', undefined, 'maftyDiscPlaylistStatus');
+          if (edition.Status === 'confirmed' && Number.isInteger(edition.DolbyVisionProfile)) {
+            status.append(translated('span', 'discConfirmed'), ' ' + edition.DolbyVisionProfile);
+          } else {
+            const label = ({ 'not-scanned': 'notScanned', 'no-enhancement-layer': 'discNoEnhancement',
+              failed: 'discFailed' })[edition.Status] ?? 'discUnconfirmed';
+            status.append(translated('span', label));
+          }
+          item.append(header, status);
+        };
+        const sections = document.createDocumentFragment();
+        const addGroups = (label, groups) => {
+          if (!groups.size) return;
+          sections.append(translated('h6', label));
+          const list = element('ul', undefined, 'maftyDiscGroups');
+          for (const editions of groups.values()) {
+            const group = element('li');
+            if (editions.length === 1) {
+              addPlaylist(group, editions[0]);
+            } else {
+              const playlists = element('ul', undefined, 'maftyDiscPlaylists');
+              for (const edition of editions) {
+                const playlist = element('li');
+                addPlaylist(playlist, edition);
+                playlists.append(playlist);
+              }
+              group.append(translated('p', 'discGroupNote', 'maftyDiscGroupNote'), playlists);
+            }
+            list.append(group);
+          }
+          sections.append(list);
+        };
+        addGroups('discEvidenced', evidenceGroups);
+        addGroups('discCandidates', candidateGroups);
+        discEditions.replaceChildren(sections);
+        if (Editions.length) {
+          discStatus.replaceChildren(translated('span', 'discPlaylistCount'), ' ' + Editions.length);
+        } else {
+          discStatus.replaceChildren(translated('span', 'discNoPlaylists'));
+        }
       };
       const loadDetails = source => {
         activeSource = source;
@@ -385,6 +449,7 @@
           .filter(Boolean).join(' · ') : '';
         discResult.hidden = !source?.DiscItemId;
         discStatus.textContent = discResult.hidden ? '' : t('loading');
+        discEditions.replaceChildren();
         detailStatus.textContent = t(!source ? 'pick' : source.HasSubtitleResult ? 'loading' : 'noSubtitleResult');
         trackList.replaceChildren();
         if (!source) return;

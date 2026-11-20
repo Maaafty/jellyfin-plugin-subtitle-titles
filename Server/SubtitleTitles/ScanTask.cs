@@ -108,7 +108,7 @@ public sealed class ScanTask(ILibraryManager library, IMediaEncoder encoder, IMe
                             await RecordSourceIssue("fileUnavailable").ConfigureAwait(false);
                         continue;
                     }
-                    var ticks = source.RunTimeTicks ?? (DiscCache.IsIso(path) ? 0 : item.RunTimeTicks ?? 0);
+                    var ticks = source.RunTimeTicks ?? (DiscVolume.IsIso(path) ? 0 : item.RunTimeTicks ?? 0);
                     try { await Scan(id, title, path, TimeSpan.FromTicks(ticks).TotalSeconds,
                         state, config, tools, bitmapReviewAvailable, season, number.GetValueOrDefault(), reuse, skipReuse, cancellationToken)
                         .ConfigureAwait(false); }
@@ -143,7 +143,7 @@ public sealed class ScanTask(ILibraryManager library, IMediaEncoder encoder, IMe
 
     private static string? ReuseExclusion(Episode episode, int sourceCount, string path, int? number) => episode switch
     {
-        _ when DiscCache.IsIso(path) => "Blu-ray ISO",
+        _ when DiscVolume.IsIso(path) => "Blu-ray ISO",
         _ when sourceCount != 1 => "multiple media sources",
         { ParentIndexNumber: not > 0 } => "not a regular season",
         { IndexNumberEnd: not null } => "multi-episode file",
@@ -219,7 +219,7 @@ public sealed class ScanTask(ILibraryManager library, IMediaEncoder encoder, IMe
         var subtitles = rows.Where(row => row.Type == MediaStreamType.Subtitle).ToArray();
         if (subtitles.Length == 0) return;
         if (!string.Equals(library.GetItemById(id)?.Path, path, StringComparison.Ordinal)) return;
-        var iso = DiscCache.IsIso(path);
+        var iso = DiscVolume.IsIso(path);
         var inputs = Inputs(subtitles, path, iso);
         var identities = UniqueIdentities(path, subtitles);
         var titleHistory = (record?.TitleHistory ?? []).ToDictionary(change => change.Track);
@@ -242,10 +242,10 @@ public sealed class ScanTask(ILibraryManager library, IMediaEncoder encoder, IMe
                     await SaveRecord(recordPath, (record ?? new("", [])) with { SourceIssue = "fileUnavailable" }, ct).ConfigureAwait(false);
                 return;
             }
-            var stamp = DiscCache.Stamp.Read(path)
+            var stamp = DiscVolume.Stamp.Read(path)
                 ?? throw new InvalidDataException("Blu-ray ISO file is unavailable");
             disc = await DiscSubtitleProbe.Read(encoder.ProbePath, path, rows, ct).ConfigureAwait(false);
-            if (DiscCache.Stamp.Read(path) != stamp)
+            if (DiscVolume.Stamp.Read(path) != stamp)
                 throw new InvalidDataException("Blu-ray ISO changed during probe");
         }
         var fingerprint = Fingerprint(path, inputs, disc);
